@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const API_BASE = "http://localhost:8000"; // Centralized Source of Truth
+export const API_BASE = "https://ai-job-tracker-backend-8urc.onrender.com"; // Centralized Source of Truth
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem("authToken") || "");
