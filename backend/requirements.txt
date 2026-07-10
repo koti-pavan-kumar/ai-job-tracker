@@ -11,4 +11,5 @@ python_bcrypt==0.3.2
 reportlab==5.0.0
 Requests==2.34.2
 SQLAlchemy==2.0.51
-uvicorn
+uvicorn==0.29.0
+python-jose[cryptography]==1.7.0
