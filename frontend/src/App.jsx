@@ -4,7 +4,7 @@ import JobForm from './JobForm';
 import { useAuth } from './AuthContext';
 
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://ai-job-tracker-backend-8urc.onrender.com";
 
 export default function App() {
   const { token, setToken, username, setUsername, logout, apiBase } = useAuth();
