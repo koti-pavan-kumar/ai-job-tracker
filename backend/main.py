@@ -4,6 +4,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
+import jwt
 from jwt.exceptions import PyJWTError as JWTError
 import io
 import os
