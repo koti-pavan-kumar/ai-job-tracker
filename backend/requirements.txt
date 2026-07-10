@@ -7,3 +7,6 @@ python-dotenv
 python-jose[cryptography]
 bcrypt
 playwright
+groq
+google-generativeai
+openai
