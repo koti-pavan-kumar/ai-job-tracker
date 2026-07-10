@@ -11,3 +11,4 @@ PyJWT[crypto]
 reportlab
 python-docx
 pydantic
+python-multipart
