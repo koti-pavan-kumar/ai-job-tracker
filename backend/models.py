@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, Boolean, DateTime
 from database import Base
 
 class User(Base):
@@ -9,6 +9,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     phone = Column(String, unique=True, index=True, nullable=False)  # Added phone number column tracking
+    is_admin = Column(Boolean, default=False, nullable=False)
 
 class JobApplication(Base):
     __tablename__ = "jobs"

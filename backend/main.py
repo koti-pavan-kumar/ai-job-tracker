@@ -391,3 +391,33 @@ def admin_delete_user(user_id: int, db: Session = Depends(database.get_db), curr
     db.delete(user_to_delete)
     db.commit()
     return {"message": f"User account container {user_id} successfully purged from database cloud node clusters."}
+    # ─── AUTO-INITIALIZE ADMINISTRATIVE USER OVERRIDES ───
+@app.on_event("startup")
+def create_default_admin():
+    db = database.SessionLocal()
+    try:
+        admin_user = os.getenv("ADMIN_USERNAME", "whitedevil")
+        admin_pass = os.getenv("ADMIN_PASSWORD")
+        
+        if admin_pass:
+            # Check if this user already exists in the database
+            existing = db.query(models.User).filter(models.User.username == admin_user).first()
+            if not existing:
+                print(f"Creating default cloud admin account: {admin_user}")
+                hashed = hash_password(admin_pass)
+                new_admin = models.User(
+                    username=admin_user,
+                    hashed_password=hashed,
+                    phone="+919999999999",
+                    is_admin=True
+                )
+                db.add(new_admin)
+                db.commit()
+            else:
+                # Force update existing user to make sure they have admin rights
+                existing.is_admin = True
+                db.commit()
+    except Exception as e:
+        print(f"Admin auto-creation warning: {e}")
+    finally:
+        db.close()
