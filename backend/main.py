@@ -394,20 +394,72 @@ def admin_delete_user(user_id: int, db: Session = Depends(database.get_db), curr
     # ─── AUTO-INITIALIZE ADMINISTRATIVE USER OVERRIDES ───
 @app.on_event("startup")
 def create_default_admin():
-    import database, models, os
+    import database, models, os, sys
     
     try:
         admin_user = os.getenv("ADMIN_USERNAME", "whitedevil")
+        admin_pass = os.getenv("ADMIN_PASSWORD", "password123")
         
+        # ─── STEP 1: RESOLVE NATIVE HASH FUNCTION ───
+        hash_func = None
+        # Check if auth is already loaded in system memory
+        for mod_name, mod in list(sys.modules.items()):
+            if 'auth' in mod_name and hasattr(mod, 'hash_password'):
+                hash_func = getattr(mod, 'hash_password')
+                break
+                
+        if not hash_func:
+            try:
+                # Direct local folder lookup fallbacks
+                import auth
+                hash_func = auth.hash_password
+            except Exception:
+                try:
+                    from backend import auth
+                    hash_func = auth.hash_password
+                except Exception:
+                    pass
+
+        # ─── STEP 2: REBUILD ADMIN RECORD IN DATABASE ───
         db = database.SessionLocal()
-        existing = db.query(models.User).filter(models.User.username == admin_user).first()
         
+        # Wipe out any old broken/unhashed entries for clean state setup
+        existing = db.query(models.User).filter(models.User.username == admin_user).first()
         if existing:
-            print(f"Purging outdated database record for: {admin_user} to allow clean state reset.")
+            print(f"Purging old state row for: {admin_user}")
             db.delete(existing)
             db.commit()
+
+        if admin_pass and hash_func:
+            # Generate your app's true internal password hash matrix
+            native_hash = hash_func(admin_pass)
+            
+            print(f"Injecting verified native admin record for: {admin_user}")
+            new_admin = models.User(
+                username=admin_user,
+                hashed_password=native_hash,
+                phone="+919999999999",
+                is_admin=True
+            )
+            db.add(new_admin)
+            db.commit()
+            print("Successfully initialized admin user credentials.")
+        else:
+            # Emergency failover: if hashing cannot be found, use passlib fallback context safely
+            from passlib.context import CryptContext
+            pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+            fallback_hash = pwd_context.hash(admin_pass)
+            
+            new_admin = models.User(
+                username=admin_user,
+                hashed_password=fallback_hash,
+                phone="+919999999999",
+                is_admin=True
+            )
+            db.add(new_admin)
+            db.commit()
+            print("Successfully initialized admin credentials via framework fallback.")
             
         db.close()
-        print("Database admin row cleared. Ready for clean setup or frontend enrollment!")
     except Exception as e:
         print(f"Admin auto-creation warning: {e}")
