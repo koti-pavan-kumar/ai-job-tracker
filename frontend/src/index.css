@@ -15,3 +15,8 @@
 .animate-slide-in {
   animation: slideIn 0.2s ease-out forwards;
 }
+
+/* Hide the floating invisible reCAPTCHA badge completely */
+.grecaptcha-badge { 
+  visibility: hidden !important; 
+}
