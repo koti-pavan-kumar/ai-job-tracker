@@ -394,15 +394,21 @@ def admin_delete_user(user_id: int, db: Session = Depends(database.get_db), curr
     # ─── AUTO-INITIALIZE ADMINISTRATIVE USER OVERRIDES ───
 @app.on_event("startup")
 def create_default_admin():
-    import database, models, os
-    from backend.auth import hash_password  # Ensure your password hashing utility is imported
+    import database, models, os, sys
     
-    db = database.SessionLocal()
+    # ─── FORCE PYTHON PATH RESOLUTION ───
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    if current_dir not in sys.path:
+        sys.path.insert(0, current_dir)
+        
     try:
+        from auth import hash_password  # This will now work perfectly anywhere
+        
         admin_user = os.getenv("ADMIN_USERNAME", "whitedevil")
         admin_pass = os.getenv("ADMIN_PASSWORD", "password123")
         
         if admin_pass:
+            db = database.SessionLocal()
             existing = db.query(models.User).filter(models.User.username == admin_user).first()
             hashed = hash_password(admin_pass)
             
@@ -418,10 +424,9 @@ def create_default_admin():
             else:
                 print(f"Updating existing admin account password for: {admin_user}")
                 existing.is_admin = True
-                existing.hashed_password = hashed  # ◄ FORCE OVERWRITE PASSWORD
+                existing.hashed_password = hashed
                 
             db.commit()
+            db.close()
     except Exception as e:
         print(f"Admin auto-creation warning: {e}")
-    finally:
-         db.close()
