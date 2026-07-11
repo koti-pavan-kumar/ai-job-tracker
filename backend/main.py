@@ -237,14 +237,16 @@ async def upload_resume_and_tailor(
 @app.get("/jobs/{job_id}/download-pdf")
 def download_job_pdf(
     job_id: int, 
+    asset_type: str = "resume",  # Added query parameter default
     db: Session = Depends(database.get_db),
     current_user: str = Depends(get_current_user)
 ):
     db_job = get_user_job_or_raise(job_id, db, current_user)
         
-    text_content = db_job.tailored_resume if db_job.tailored_resume else db_job.tailored_cover_letter
+    # Pick the exact requested asset type
+    text_content = db_job.tailored_resume if asset_type == "resume" else db_job.tailored_cover_letter
     if not text_content:
-        raise HTTPException(status_code=404, detail="No tailored document content found to download yet.")
+        raise HTTPException(status_code=404, detail=f"No tailored {asset_type} content found to download yet.")
     
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
@@ -253,9 +255,7 @@ def download_job_pdf(
     styles = getSampleStyleSheet()
     normal_style = ParagraphStyle('ResumeBody', parent=styles['Normal'], fontSize=10, leading=14, spaceAfter=6)
     
-    # Clean standard markdown syntax tokens
     clean_text = text_content.replace("**", "").replace("*", "")
-    
     for line in clean_text.split("\n"):
         stripped = line.strip()
         if not stripped:
@@ -263,34 +263,36 @@ def download_job_pdf(
             continue
             
         lower_line = stripped.lower()
-        # FILTER: Catch matching keywords anywhere near the start of conversational filler lines
         if (lower_line.startswith("here is") or 
             lower_line.startswith("here's") or 
             lower_line.startswith("note") or 
             lower_line.startswith("this is a tailored") or
             lower_line.startswith("i have reorganized") or
             lower_line.startswith("i've highlighted")):
-            continue # Skip adding conversational meta notes to the document layout
+            continue
             
         story.append(Paragraph(stripped, normal_style))
             
     doc.build(story)
     buffer.seek(0)
     
-    filename = f"{db_job.company_name}_Tailored_Asset.pdf".replace(" ", "_")
+    filename = f"{db_job.company_name}_Tailored_{asset_type.capitalize()}.pdf".replace(" ", "_")
     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
+
 
 @app.get("/jobs/{job_id}/download-docx")
 def download_job_docx(
     job_id: int, 
+    asset_type: str = "resume",  # Added query parameter default
     db: Session = Depends(database.get_db),
     current_user: str = Depends(get_current_user)
 ):
     db_job = get_user_job_or_raise(job_id, db, current_user)
         
-    text_content = db_job.tailored_resume if db_job.tailored_resume else db_job.tailored_cover_letter
+    # Pick the exact requested asset type
+    text_content = db_job.tailored_resume if asset_type == "resume" else db_job.tailored_cover_letter
     if not text_content:
-        raise HTTPException(status_code=404, detail="No tailored document content found to download yet.")
+        raise HTTPException(status_code=404, detail=f"No tailored {asset_type} content found to download yet.")
     
     doc = Document()
     clean_text = text_content.replace("**", "").replace("*", "")
@@ -302,14 +304,13 @@ def download_job_docx(
             continue
             
         lower_line = stripped.lower()
-        # FILTER: Catch matching keywords anywhere near the start of conversational filler lines
         if (lower_line.startswith("here is") or 
             lower_line.startswith("here's") or 
             lower_line.startswith("note") or 
             lower_line.startswith("this is a tailored") or
             lower_line.startswith("i have reorganized") or
             lower_line.startswith("i've highlighted")):
-            continue # Skip adding conversational meta notes to the document layout
+            continue
             
         doc.add_paragraph(stripped)
             
@@ -317,7 +318,7 @@ def download_job_docx(
     doc.save(buffer)
     buffer.seek(0)
     
-    filename = f"{db_job.company_name}_Tailored_Asset.docx".replace(" ", "_")
+    filename = f"{db_job.company_name}_Tailored_{asset_type.capitalize()}.docx".replace(" ", "_")
     return StreamingResponse(buffer, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 
