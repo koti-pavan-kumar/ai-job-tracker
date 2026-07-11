@@ -160,12 +160,24 @@ export default function App() {
         loginData.append("username", username);
         loginData.append("password", password);
 
+        // Try standard route first, fallback to /api/token if it returns Not Found
         try {
-          const res = await fetch(`${API_BASE}/token`, {
+          let url = `${API_BASE}/token`;
+          let res = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: loginData
           });
+
+          if (res.status === 404) {
+            url = `${API_BASE}/api/token`;
+            res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: loginData
+            });
+          }
+
           const data = await res.json();
           if (res.ok && data.access_token) {
             localStorage.setItem("authToken", data.access_token);
@@ -180,7 +192,8 @@ export default function App() {
         }
       } else if (authMode === "register") {
         try {
-          const res = await fetch(`${API_BASE}/register`, {
+          let url = `${API_BASE}/register`;
+          let res = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -189,6 +202,21 @@ export default function App() {
               phone: ""
             })
           });
+
+          // Fallback check: If root route is 404, try the /api/register prefix
+          if (res.status === 404) {
+            url = `${API_BASE}/api/register`;
+            res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                username: username, 
+                password: password,
+                phone: ""
+              })
+            });
+          }
+
           const data = await res.json();
           if (res.ok) {
             alert("Account provisioned successfully! You can now log in.");
