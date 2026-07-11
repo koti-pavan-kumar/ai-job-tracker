@@ -181,7 +181,11 @@ export default function App() {
           const res = await fetch(`${API_BASE}/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ 
+              username: username, 
+              password: password,
+              phone: "" // Sent as an empty fallback string to preserve schema integrity
+            })
           });
           const data = await res.json();
           if (res.ok) {
@@ -189,7 +193,9 @@ export default function App() {
             setAuthMode("login"); 
             setPassword("");
           } else {
-            alert(data.detail || "Registration processing block rejected.");
+            // Stringify or parse validation details cleanly to prevent [object Object] rendering
+            const errorMsg = data.detail ? (typeof data.detail === 'object' ? JSON.stringify(data.detail) : data.detail) : "Registration block rejected.";
+            alert(errorMsg);
           }
         } catch (err) {
           alert("Registration connection failed.");
