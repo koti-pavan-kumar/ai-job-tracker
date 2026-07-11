@@ -13,3 +13,4 @@ python-docx
 pydantic
 python-multipart
 pypdf
+firebase
