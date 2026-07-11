@@ -10,7 +10,7 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB8MuAN-3bYhrKvx7QmrOhhMkYFpG73qIA",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "ai-job-trcker.firebaseapp.com",
   projectId: "ai-job-trcker",
   storageBucket: "ai-job-trcker.firebasestorage.app",

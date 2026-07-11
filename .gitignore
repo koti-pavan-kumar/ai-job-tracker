@@ -1,6 +1,7 @@
 # Databases & Secrets
 backend/.env
 backend/job_tracker.db
+frontend/.env
 backend/__pycache__/
 
 # Frontend dependencies & builds
