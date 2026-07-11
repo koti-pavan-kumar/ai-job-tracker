@@ -395,7 +395,7 @@ def admin_delete_user(user_id: int, db: Session = Depends(database.get_db), curr
 @app.on_event("startup")
 def create_default_admin():
     import database, models, os
-    from auth import hash_password  # Ensure your password hashing utility is imported
+    from backend.auth import hash_password  # Ensure your password hashing utility is imported
     
     db = database.SessionLocal()
     try:

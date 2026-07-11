@@ -299,7 +299,7 @@ export default function App() {
             {authMode !== "forgot" && (
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Username</label>
-                <input type="text" value={username} onChange={e => setUsername(e.target.value)} required={authMode !== "forgot"} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="admin" />
+                <input type="text" value={username} onChange={e => setUsername(e.target.value)} required={authMode !== "forgot"} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="username" />
               </div>
             )}
 
