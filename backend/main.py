@@ -394,15 +394,12 @@ def admin_delete_user(user_id: int, db: Session = Depends(database.get_db), curr
     # ─── AUTO-INITIALIZE ADMINISTRATIVE USER OVERRIDES ───
 @app.on_event("startup")
 def create_default_admin():
-    import database, models, os, sys
+    import database, models, os
     
-    # ─── FORCE PYTHON PATH RESOLUTION ───
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    if current_dir not in sys.path:
-        sys.path.insert(0, current_dir)
-        
     try:
-        from auth import hash_password  # This will now work perfectly anywhere
+        # Bypassing external module imports to prevent ModuleNotFoundError
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         
         admin_user = os.getenv("ADMIN_USERNAME", "whitedevil")
         admin_pass = os.getenv("ADMIN_PASSWORD", "password123")
@@ -410,10 +407,12 @@ def create_default_admin():
         if admin_pass:
             db = database.SessionLocal()
             existing = db.query(models.User).filter(models.User.username == admin_user).first()
-            hashed = hash_password(admin_pass)
+            
+            # Generate the secure hash inline
+            hashed = pwd_context.hash(admin_pass)
             
             if not existing:
-                print(f"Creating default cloud admin account: {admin_user}")
+                print(f"Creating brand-new cloud admin account: {admin_user}")
                 new_admin = models.User(
                     username=admin_user,
                     hashed_password=hashed,
@@ -422,11 +421,12 @@ def create_default_admin():
                 )
                 db.add(new_admin)
             else:
-                print(f"Updating existing admin account password for: {admin_user}")
+                print(f"Overwriting password and forcing admin status for: {admin_user}")
                 existing.is_admin = True
-                existing.hashed_password = hashed
+                existing.hashed_password = hashed  # Explicit password reset
                 
             db.commit()
             db.close()
+            print("Successfully updated admin user table schemas.")
     except Exception as e:
         print(f"Admin auto-creation warning: {e}")
