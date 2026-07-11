@@ -258,18 +258,19 @@ def download_job_pdf(
     
     for line in clean_text.split("\n"):
         stripped = line.strip()
-        # FILTER: Skip AI conversational chat sentences, introductions, and footnotes
         if not stripped:
             story.append(Spacer(1, 10))
             continue
             
         lower_line = stripped.lower()
+        # FILTER: Catch matching keywords anywhere near the start of conversational filler lines
         if (lower_line.startswith("here is") or 
             lower_line.startswith("here's") or 
-            lower_line.startswith("note:") or 
+            lower_line.startswith("note") or 
             lower_line.startswith("this is a tailored") or
-            lower_line.startswith("i have reorganized")):
-            continue # Skip adding this line to the PDF document builder stream
+            lower_line.startswith("i have reorganized") or
+            lower_line.startswith("i've highlighted")):
+            continue # Skip adding conversational meta notes to the document layout
             
         story.append(Paragraph(stripped, normal_style))
             
@@ -301,12 +302,14 @@ def download_job_docx(
             continue
             
         lower_line = stripped.lower()
+        # FILTER: Catch matching keywords anywhere near the start of conversational filler lines
         if (lower_line.startswith("here is") or 
             lower_line.startswith("here's") or 
-            lower_line.startswith("note:") or 
+            lower_line.startswith("note") or 
             lower_line.startswith("this is a tailored") or
-            lower_line.startswith("i have reorganized")):
-            continue # Skip adding conversational conversational meta notes to document profiles
+            lower_line.startswith("i have reorganized") or
+            lower_line.startswith("i've highlighted")):
+            continue # Skip adding conversational meta notes to the document layout
             
         doc.add_paragraph(stripped)
             
