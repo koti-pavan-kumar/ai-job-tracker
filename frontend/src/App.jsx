@@ -154,7 +154,8 @@ export default function App() {
     if (!jobId || jobId === "undefined") return;
     
     try {
-      const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}`;
+      # FIXED: Appended ?asset_type=${assetMode} to pass the active selection ('resume' or 'coverletter') to the backend
+      const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}?asset_type=${assetMode}`;
       const res = await fetch(endpoint, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -169,7 +170,11 @@ export default function App() {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.setAttribute('download', `${activeWorkspaceJob.company_name || "Tailored"}_Asset.${format}`);
+      
+      # OPTIONAL CLEANUP: Adjust visual filename dynamically based on assetMode
+      const displayType = assetMode === "resume" ? "Resume" : "CoverLetter";
+      link.setAttribute('download', `${activeWorkspaceJob.company_name || "Tailored"}_${displayType}.${format}`);
+      
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);

@@ -237,13 +237,14 @@ async def upload_resume_and_tailor(
 @app.get("/jobs/{job_id}/download-pdf")
 def download_job_pdf(
     job_id: int, 
-    asset_type: str = "resume",  # Added query parameter default
+    asset_type: str = "resume",  # Added query parameter with a default
     db: Session = Depends(database.get_db),
     current_user: str = Depends(get_current_user)
 ):
+    # Enforce strict tenancy ownership validation
     db_job = get_user_job_or_raise(job_id, db, current_user)
         
-    # Pick the exact requested asset type
+    # Pick content matching the specific asset requested
     text_content = db_job.tailored_resume if asset_type == "resume" else db_job.tailored_cover_letter
     if not text_content:
         raise HTTPException(status_code=404, detail=f"No tailored {asset_type} content found to download yet.")
@@ -263,6 +264,7 @@ def download_job_pdf(
             continue
             
         lower_line = stripped.lower()
+        # Filter out AI meta introductions and descriptions
         if (lower_line.startswith("here is") or 
             lower_line.startswith("here's") or 
             lower_line.startswith("note") or 
@@ -283,13 +285,14 @@ def download_job_pdf(
 @app.get("/jobs/{job_id}/download-docx")
 def download_job_docx(
     job_id: int, 
-    asset_type: str = "resume",  # Added query parameter default
+    asset_type: str = "resume",  # Added query parameter with a default
     db: Session = Depends(database.get_db),
     current_user: str = Depends(get_current_user)
 ):
+    # Enforce strict tenancy ownership validation
     db_job = get_user_job_or_raise(job_id, db, current_user)
         
-    # Pick the exact requested asset type
+    # Pick content matching the specific asset requested
     text_content = db_job.tailored_resume if asset_type == "resume" else db_job.tailored_cover_letter
     if not text_content:
         raise HTTPException(status_code=404, detail=f"No tailored {asset_type} content found to download yet.")
