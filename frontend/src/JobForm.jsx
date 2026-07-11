@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 
-// FIXED: Destructured token so the component can use it
 export default function JobForm({ onJobAdded }) {
   const { token, apiBase } = useAuth();
   const [url, setUrl] = useState("");
@@ -13,7 +12,6 @@ export default function JobForm({ onJobAdded }) {
     setLoading(true);
     setFormData(null);
     try {
-      // FIXED: Pointed to the correct analyze-url endpoint with proper payload & token
       const res = await fetch(`${apiBase}/jobs/analyze-url`, {
         method: "POST",
         headers: {
@@ -24,13 +22,13 @@ export default function JobForm({ onJobAdded }) {
       });
       if (res.ok) {
         const data = await res.json();
-        // Add a default status field for safety if your scraper doesn't provide it
         setFormData({ ...data, status: "Applied" });
       } else {
-        alert("Failed execution parameter analysis mapping.");
+        alert("Failed to analyze the job link. Make sure the backend is fully awake.");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Fetch error: ", err);
+      alert("Network error: Could not connect to the AI analyzer service.");
     } finally {
       setLoading(false);
     }
@@ -39,7 +37,6 @@ export default function JobForm({ onJobAdded }) {
   const handleSave = async () => {
     if (!formData) return;
     try {
-      // FIXED: Attached Authorization token here so the user can successfully save the entry
       const res = await fetch(`${apiBase}/jobs`, {
         method: "POST",
         headers: { 
@@ -53,10 +50,10 @@ export default function JobForm({ onJobAdded }) {
         setFormData(null);
         if (onJobAdded) onJobAdded();
       } else {
-        alert("Failed to commit pipeline record to your account workspace.");
+        alert("Failed to save the job record to your profile.");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Save error: ", err);
     }
   };
 
