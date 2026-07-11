@@ -153,9 +153,12 @@ export default function App() {
     const jobId = activeWorkspaceJob?.id;
     if (!jobId || jobId === "undefined") return;
     
+    // Normalize string naming convention between frontend tabs and backend columns
+    const backendAssetType = assetMode === "coverletter" ? "cover_letter" : "resume";
+    
     try {
-      # FIXED: Appended ?asset_type=${assetMode} to pass the active selection ('resume' or 'coverletter') to the backend
-      const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}?asset_type=${assetMode}`;
+      // FIXED: Used backendAssetType instead of assetMode
+      const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}?asset_type=${backendAssetType}`;
       const res = await fetch(endpoint, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -171,8 +174,7 @@ export default function App() {
       const link = document.createElement('a');
       link.href = downloadUrl;
       
-      # OPTIONAL CLEANUP: Adjust visual filename dynamically based on assetMode
-      const displayType = assetMode === "resume" ? "Resume" : "CoverLetter";
+      const displayType = assetMode === "coverletter" ? "CoverLetter" : "Resume";
       link.setAttribute('download', `${activeWorkspaceJob.company_name || "Tailored"}_${displayType}.${format}`);
       
       document.body.appendChild(link);
