@@ -12,3 +12,4 @@ reportlab
 python-docx
 pydantic
 python-multipart
+pypdf
