@@ -30,7 +30,7 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 
 if not SECRET_KEY:
     raise RuntimeError("CRITICAL CRASH: SECRET_KEY configuration environment variable is missing!")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=\"token\")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def hash_password(password: str) -> str:
     # Encodes string to bytes, salts, and hashes natively
