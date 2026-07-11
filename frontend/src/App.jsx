@@ -125,11 +125,12 @@ export default function App() {
     formData.append("file", selectedFile);
 
     try {
-      const res = await fetch(`${API_BASE}/jobs/upload-resume-tailor`, {
+      // FIXED: Changed endpoint path from /jobs/upload-resume-tailor to /generate-assets
+      const res = await fetch(`${API_BASE}/generate-assets`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
-          // FIXED: Content-Type header is left off entirely so the browser sets the multi-part boundaries correctly automatically!
+          // Remember: Do NOT set Content-Type header manually here so the browser can format the boundary!
         },
         body: formData,
       });
