@@ -172,35 +172,41 @@ export default function App() {
   };
 
   const handleDownloadAsset = async (format) => {
-    const jobId = activeWorkspaceJob?.id;
-    if (!jobId || jobId === "undefined") return;
-    const backendAssetType = assetMode === "coverletter" ? "cover_letter" : "resume";
+  const jobId = activeWorkspaceJob?.id;
+  if (!jobId || jobId === "undefined") return;
+  
+  // FIXED: Safeguard both "coverletter" and "cover_letter" string variations
+  const backendAssetType = (assetMode === "coverletter" || assetMode === "cover_letter") 
+    ? "cover_letter" 
+    : "resume";
+  
+  try {
+    const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}?asset_type=${backendAssetType}`;
+    const res = await fetch(endpoint, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
     
-    try {
-      const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}?asset_type=${backendAssetType}`;
-      const res = await fetch(endpoint, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      
-      if (!res.ok) {
-        const errData = await res.json();
-        alert(errData.detail || "Failed to trigger compilation stream rendering.");
-        return;
-      }
-
-      const blob = await res.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      const displayType = assetMode === "coverletter" ? "CoverLetter" : "Resume";
-      link.setAttribute('download', `${activeWorkspaceJob.company_name || "Tailored"}_${displayType}.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-    } catch {
-      alert("Error building document data downlinks.");
+    if (!res.ok) {
+      const errData = await res.json();
+      alert(errData.detail || "Failed to trigger compilation stream rendering.");
+      return;
     }
-  };
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    
+    const displayType = (assetMode === "coverletter" || assetMode === "cover_letter") ? "CoverLetter" : "Resume";
+    link.setAttribute('download', `${activeWorkspaceJob.company_name || "Tailored"}_${displayType}.${format}`);
+    
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode.removeChild(link);
+  } catch (err) {
+    alert("Error building document data downlinks.");
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
