@@ -3,7 +3,6 @@ import Dashboard from './Dashboard';
 import JobForm from './JobForm';
 import { useAuth } from './AuthContext';
 
-
 const API_BASE = "https://ai-job-tracker-backend-8urc.onrender.com";
 
 export default function App() {
@@ -15,18 +14,16 @@ export default function App() {
   const [workspaceOutput, setWorkspaceOutput] = useState("");
   const [generating, setGenerating] = useState(false);
   const [assetMode, setAssetMode] = useState("resume");
-  const [authMode, setAuthMode] = useState("login"); // Controls "login" vs "register" screen view
-
-  
+  const [authMode, setAuthMode] = useState("login"); 
   const [password, setPassword] = useState("");
 
   const showToast = (message, type = 'success') => {
-  const id = Date.now();
-  setToasts((prev) => [...prev, { id, message, type }]);
-  setTimeout(() => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, 3000);
-};
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 3000);
+  };
 
   const fetchJobs = async () => {
     try {
@@ -90,6 +87,7 @@ export default function App() {
   };
 
   const handleUpdateStatus = async (id, nextStatus) => {
+    if (!id || id === "undefined") return;
     try {
       const res = await fetch(`${API_BASE}/jobs/${id}`, {
         method: "PUT",
@@ -108,8 +106,9 @@ export default function App() {
   };
 
   const handleUploadAndTailor = async (type) => {
-    if (!activeWorkspaceJob) {
-      alert("Please choose an active pipeline tracker card first.");
+    const jobId = activeWorkspaceJob?.id;
+    if (!jobId || jobId === "undefined") {
+      alert("Please choose a valid active pipeline tracker card first.");
       return;
     }
     if (!selectedFile) {
@@ -121,7 +120,7 @@ export default function App() {
     setAssetMode(type);
 
     const formData = new FormData();
-    formData.append("job_id", activeWorkspaceJob.id);
+    formData.append("job_id", jobId);
     formData.append("asset_type", type);
     formData.append("file", selectedFile);
 
@@ -130,15 +129,18 @@ export default function App() {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
+          // FIXED: Content-Type header is left off entirely so the browser sets the multi-part boundaries correctly automatically!
         },
         body: formData,
       });
       const resData = await res.json();
       if (res.ok) {
-        setWorkspaceOutput(resData.data || resData.tailored_text);
+        setWorkspaceOutput(resData.data || resData.tailored_text || "Generation complete.");
         fetchJobs();
+        showToast("AI Customization completed successfully!", "success");
       } else {
         setWorkspaceOutput(`Optimization Block Error: ${resData.detail || "Verification failed."}`);
+        showToast("AI Engine could not process the request context.", "error");
       }
     } catch (err) {
       setWorkspaceOutput("Network timeout encountered during secure stream rendering.");
@@ -148,10 +150,11 @@ export default function App() {
   };
 
   const handleDownloadAsset = async (format) => {
-    if (!activeWorkspaceJob) return;
+    const jobId = activeWorkspaceJob?.id;
+    if (!jobId || jobId === "undefined") return;
     
     try {
-      const endpoint = `${API_BASE}/jobs/${activeWorkspaceJob.id}/download-${format}`;
+      const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}`;
       const res = await fetch(endpoint, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -166,7 +169,7 @@ export default function App() {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.setAttribute('download', `${activeWorkspaceJob.company_name}_Tailored_Asset.${format}`);
+      link.setAttribute('download', `${activeWorkspaceJob.company_name || "Tailored"}_Asset.${format}`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -203,7 +206,6 @@ export default function App() {
           alert("Network identity verification connection timed out.");
         }
       } else {
-        // Handle User Account Registration Flow
         try {
           const res = await fetch(`${API_BASE}/register`, {
             method: "POST",
@@ -213,8 +215,8 @@ export default function App() {
           const data = await res.json();
           if (res.ok) {
             alert("Account registered successfully! You can now sign in.");
-            setAuthMode("login"); // Flip UI back to login screen smoothly
-            setPassword("");      // Clean out the password field for safety
+            setAuthMode("login"); 
+            setPassword("");      
           } else {
             alert(data.detail || "Registration processing block rejected.");
           }
@@ -228,7 +230,6 @@ export default function App() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans antialiased p-4">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08),transparent_70%)] pointer-events-none"></div>
         <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 shadow-xl relative space-y-6">
-          
           <div className="text-center space-y-2">
             <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-md shadow-indigo-600/10">
               <span className="font-black text-white text-xl">⚡</span>
@@ -239,7 +240,6 @@ export default function App() {
             </p>
           </div>
 
-          {/* Sliding Switch Tabs */}
           <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/50">
             <button 
               type="button"
@@ -273,7 +273,6 @@ export default function App() {
               {authMode === "login" ? "Authorize Workspace" : "Create Studio Account"}
             </button>
           </form>
-          
         </div>
       </div>
     );
@@ -281,8 +280,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(199,210,254,0.35),rgba(255,255,255,0))] text-slate-800 font-sans antialiased selection:bg-indigo-500/10">
-      
-      {/* Light Top Navigation Banner */}
       <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur-xl px-8 py-4 sticky top-0 z-50 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-600/10">
@@ -307,12 +304,10 @@ export default function App() {
       </header>
       
       <main className="max-w-7xl mx-auto p-8 space-y-12">
-        {/* Job Creator Block */}
         <div className="relative group">
           <JobForm onJobAdded={fetchJobs} />
         </div>
         
-        {/* Dashboard Grid Analytics */}
         <Dashboard 
           jobs={jobs} 
           onUpdateStatus={handleUpdateStatus} 
@@ -330,7 +325,7 @@ export default function App() {
             }
           }}
         />
-        {/* ================= WORKSPACE GENERATOR PANEL ================= */}
+
         {activeWorkspaceJob && (
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md space-y-6 transition-all animate-fadeIn">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -357,7 +352,6 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Settings Sidebar Panel */}
               <div className="space-y-4">
                 <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 space-y-4">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">1. Select Optimization Asset</label>
@@ -407,7 +401,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Right Output Textarea Stream */}
               <div className="lg:col-span-2 flex flex-col">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Canvas Content Preview</label>
                 <textarea 
@@ -421,30 +414,30 @@ export default function App() {
           </div>
         )}
       </main>
-      {/* FLOATING TOAST NOTIFICATION CORNER LAYER */}
-<div className="fixed bottom-5 right-5 z-50 space-y-3 max-w-sm w-full pointer-events-none">
-  {toasts.map((toast) => (
-    <div
-      key={toast.id}
-      className={`pointer-events-auto p-4 rounded-xl shadow-lg border text-xs font-semibold flex items-center justify-between transition-all duration-300 ${
-        toast.type === 'error'
-          ? 'bg-rose-50 border-rose-200 text-rose-800'
-          : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
-        <span>{toast.message}</span>
+
+      <div className="fixed bottom-5 right-5 z-50 space-y-3 max-w-sm w-full pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto p-4 rounded-xl shadow-lg border text-xs font-semibold flex items-center justify-between transition-all duration-300 ${
+              toast.type === 'error'
+                ? 'bg-rose-50 border-rose-200 text-rose-800'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+              <span>{toast.message}</span>
+            </div>
+            <button 
+              onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+              className="ml-4 text-slate-400 hover:text-slate-600 font-bold transition"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
       </div>
-      <button 
-        onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-        className="ml-4 text-slate-400 hover:text-slate-600 font-bold transition"
-      >
-        ✕
-      </button>
-    </div>
-  ))}
-</div>
     </div>
   );
 }
