@@ -9,14 +9,16 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
+// Pure client-side check that will never crash the browser engine
+const resolvedApiKey = import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB8MuAN-3bYhrKvx7QmrOhhMkYFpG73qIA";
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: "ai-job-trcker.firebaseapp.com",
-  projectId: "ai-job-trcker",
-  storageBucket: "ai-job-trcker.firebasestorage.app",
-  messagingSenderId: "511408851682",
-  appId: "1:511408851682:web:3226536432e2ba2b772cbb",
-  measurementId: "G-261VFDZRDB"
+  apiKey: resolvedApiKey,
+  authDomain: "ai-job-tracker.firebaseapp.com",
+  projectId: "ai-job-tracker",
+  storageBucket: "ai-job-tracker.appspot.com",
+  messagingSenderId: "360639912061",
+  appId: "1:360639912061:web:b6170d1887372c3d59e3ff"
 };
 
 const app = initializeApp(firebaseConfig);
