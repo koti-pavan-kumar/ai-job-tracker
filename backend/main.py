@@ -238,9 +238,8 @@ async def upload_resume_and_tailor(
 def download_job_pdf(
     job_id: int, 
     db: Session = Depends(database.get_db),
-    current_user: str = Depends(get_current_user) # Added Dependency Guard
+    current_user: str = Depends(get_current_user)
 ):
-    # Enforce strict tenancy ownership validation
     db_job = get_user_job_or_raise(job_id, db, current_user)
         
     text_content = db_job.tailored_resume if db_job.tailored_resume else db_job.tailored_cover_letter
@@ -254,12 +253,25 @@ def download_job_pdf(
     styles = getSampleStyleSheet()
     normal_style = ParagraphStyle('ResumeBody', parent=styles['Normal'], fontSize=10, leading=14, spaceAfter=6)
     
+    # Clean standard markdown syntax tokens
     clean_text = text_content.replace("**", "").replace("*", "")
+    
     for line in clean_text.split("\n"):
-        if line.strip():
-            story.append(Paragraph(line.strip(), normal_style))
-        else:
+        stripped = line.strip()
+        # FILTER: Skip AI conversational chat sentences, introductions, and footnotes
+        if not stripped:
             story.append(Spacer(1, 10))
+            continue
+            
+        lower_line = stripped.lower()
+        if (lower_line.startswith("here is") or 
+            lower_line.startswith("here's") or 
+            lower_line.startswith("note:") or 
+            lower_line.startswith("this is a tailored") or
+            lower_line.startswith("i have reorganized")):
+            continue # Skip adding this line to the PDF document builder stream
+            
+        story.append(Paragraph(stripped, normal_style))
             
     doc.build(story)
     buffer.seek(0)
@@ -271,9 +283,8 @@ def download_job_pdf(
 def download_job_docx(
     job_id: int, 
     db: Session = Depends(database.get_db),
-    current_user: str = Depends(get_current_user) # Added Dependency Guard
+    current_user: str = Depends(get_current_user)
 ):
-    # Enforce strict tenancy ownership validation
     db_job = get_user_job_or_raise(job_id, db, current_user)
         
     text_content = db_job.tailored_resume if db_job.tailored_resume else db_job.tailored_cover_letter
@@ -284,10 +295,20 @@ def download_job_docx(
     clean_text = text_content.replace("**", "").replace("*", "")
     
     for line in clean_text.split("\n"):
-        if line.strip():
-            doc.add_paragraph(line.strip())
-        else:
+        stripped = line.strip()
+        if not stripped:
             doc.add_paragraph("")
+            continue
+            
+        lower_line = stripped.lower()
+        if (lower_line.startswith("here is") or 
+            lower_line.startswith("here's") or 
+            lower_line.startswith("note:") or 
+            lower_line.startswith("this is a tailored") or
+            lower_line.startswith("i have reorganized")):
+            continue # Skip adding conversational conversational meta notes to document profiles
+            
+        doc.add_paragraph(stripped)
             
     buffer = io.BytesIO()
     doc.save(buffer)
