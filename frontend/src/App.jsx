@@ -9,11 +9,17 @@ import { useAuth } from './AuthContext';
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+
+// Initialize Firebase
+// import { initializeApp } from "firebase/app";
+
 const firebaseConfig = {
   apiKey: "AIzaSyB8MuAN-3bYhrKvx7QmrOhhMkYFpG73qIA",
   authDomain: "ai-job-trcker.firebaseapp.com",
@@ -24,21 +30,8 @@ const firebaseConfig = {
   measurementId: "G-261VFDZRDB"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-import { initializeApp } from "firebase/app";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-
-const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
 const firebaseApp = initializeApp(firebaseConfig);
 const firebaseAuth = getAuth(firebaseApp);
 // ────────────────────────────────────────
