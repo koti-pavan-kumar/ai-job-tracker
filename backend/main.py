@@ -394,17 +394,20 @@ def admin_delete_user(user_id: int, db: Session = Depends(database.get_db), curr
     # ─── AUTO-INITIALIZE ADMINISTRATIVE USER OVERRIDES ───
 @app.on_event("startup")
 def create_default_admin():
+    import database, models, os
+    from auth import hash_password  # Ensure your password hashing utility is imported
+    
     db = database.SessionLocal()
     try:
         admin_user = os.getenv("ADMIN_USERNAME", "whitedevil")
-        admin_pass = os.getenv("ADMIN_PASSWORD")
+        admin_pass = os.getenv("ADMIN_PASSWORD", "password123")
         
         if admin_pass:
-            # Check if this user already exists in the database
             existing = db.query(models.User).filter(models.User.username == admin_user).first()
+            hashed = hash_password(admin_pass)
+            
             if not existing:
                 print(f"Creating default cloud admin account: {admin_user}")
-                hashed = hash_password(admin_pass)
                 new_admin = models.User(
                     username=admin_user,
                     hashed_password=hashed,
@@ -412,12 +415,13 @@ def create_default_admin():
                     is_admin=True
                 )
                 db.add(new_admin)
-                db.commit()
             else:
-                # Force update existing user to make sure they have admin rights
+                print(f"Updating existing admin account password for: {admin_user}")
                 existing.is_admin = True
-                db.commit()
+                existing.hashed_password = hashed  # ◄ FORCE OVERWRITE PASSWORD
+                
+            db.commit()
     except Exception as e:
         print(f"Admin auto-creation warning: {e}")
     finally:
-        db.close()
+         db.close()
