@@ -333,13 +333,12 @@ def delete_job(job_id: int, db: Session = Depends(database.get_db), current_user
 
 @app.post("/register")
 def register_user(user_data: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    # 1. Check if username already exists
+    # 1. Look for conflicting usernames
     existing_user = db.query(models.User).filter(models.User.username == user_data.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username is already occupied within this workspace configuration.")
 
-    # 2. Hash the user's password natively using your app's built-in tool
-    # (or use fallback logic depending on your import architecture)
+    # 2. Securely process password text parameters using available tools
     try:
         from auth import hash_password
         hashed = hash_password(user_data.password)
@@ -347,17 +346,23 @@ def register_user(user_data: schemas.UserCreate, db: Session = Depends(database.
         import hashlib
         hashed = hashlib.sha256(user_data.password.encode('utf-8')).hexdigest()
 
-    # 3. Save the user data record instantly without any OTP checks
+    # 3. Create user entry - assign a random or unique string for phone if empty to prevent DB constraint errors
+    fallback_phone = user_data.phone if user_data.phone else f"no_phone_{user_data.username}"
+
     new_user = models.User(
         username=user_data.username,
-        phone=user_data.phone,
+        phone=fallback_phone,
         hashed_password=hashed,
-        is_admin=False # Default standard user privilege
+        is_admin=False
     )
     
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database operational failure: {str(e)}")
     
     return {"status": "success", "message": "User registered cleanly."}
 
