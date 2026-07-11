@@ -30,7 +30,7 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 
 if not SECRET_KEY:
     raise RuntimeError("CRITICAL CRASH: SECRET_KEY configuration environment variable is missing!")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=\"token\")
 
 def hash_password(password: str) -> str:
     # Encodes string to bytes, salts, and hashes natively
@@ -40,15 +40,6 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     # Safely checks plane textual bytes against database strings
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-
-# Static Account Directory Database mapping
-# USER_DB has been deprecated to support dynamic database-driven user authentication registration paths.
-# USER_DB = {
-#     "admin": {
-#         "username": "admin",
-#         "hashed_password": hash_password("password123")  # Safe native hashing setup
-#     }
-# }
 
 # Initialize Database Schema Structures
 models.Base.metadata.create_all(bind=database.engine)
@@ -68,7 +59,7 @@ app.add_middleware(
 
 @app.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    # Look up the user dynamically inside your SQLite database file
+    # Look up the user dynamically inside your database instance
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
     
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -104,7 +95,6 @@ def get_user_job_or_raise(job_id: int, db: Session, username: str) -> models.Job
     ).first()
 
     # 3. If it doesn't exist or doesn't belong to them, return a 404
-    # Note: Returning a 404 instead of a 403 prevents malicious users from probing if an ID exists.
     if not db_job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
@@ -125,7 +115,6 @@ def analyze_url(request: schemas.URLIngestRequest):
 
 @app.post("/jobs", response_model=schemas.JobResponse)
 def create_job(job: schemas.JobCreate, db: Session = Depends(database.get_db), current_username: str = Depends(get_current_user)):
-    # Look up the current user's database ID using their token username
     user = db.query(models.User).filter(models.User.username == current_username).first()
     
     db_job = models.JobApplication(**job.model_dump())
@@ -139,12 +128,10 @@ def create_job(job: schemas.JobCreate, db: Session = Depends(database.get_db), c
 
 @app.get("/jobs", response_model=List[schemas.JobResponse])
 def get_jobs(db: Session = Depends(database.get_db), current_username: str = Depends(get_current_user)):
-    # Look up the logged-in user
     user = db.query(models.User).filter(models.User.username == current_username).first()
     if not user:
         raise HTTPException(status_code=401, detail="User profile mismatch.")
         
-    # CRUCIAL: Filter the query by user_id so users only see their own data
     return db.query(models.JobApplication).filter(models.JobApplication.user_id == user.id).order_by(models.JobApplication.id.desc()).all()
 
 @app.put("/jobs/{job_id}", response_model=schemas.JobResponse)
@@ -156,7 +143,6 @@ def update_job(
 ):
     db_job = get_user_job_or_raise(job_id, db, current_user)
     
-    # Update only the fields sent in the request (like status)
     for key, val in job_update.model_dump(exclude_unset=True).items():
         setattr(db_job, key, val)
         
@@ -168,9 +154,8 @@ def update_job(
 def generate_assets(
     request: schemas.AssetGenerationRequest, 
     db: Session = Depends(database.get_db),
-    current_user: str = Depends(get_current_user) # Added Dependency Guard
+    current_user: str = Depends(get_current_user)
 ):
-    # Enforce strict tenancy ownership validation
     db_job = get_user_job_or_raise(request.job_id, db, current_user)
     
     jd_payload = {
@@ -194,7 +179,7 @@ async def upload_resume_and_tailor(
     asset_type: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(database.get_db),
-    current_user: str = Depends(get_current_user) # Added Dependency Guard
+    current_user: str = Depends(get_current_user)
 ):
     contents = await file.read()
     resume_text = ""
@@ -215,7 +200,6 @@ async def upload_resume_and_tailor(
     else:
         resume_text = contents.decode("utf-8")
 
-    # Enforce strict tenancy ownership validation
     db_job = get_user_job_or_raise(job_id, db, current_user)
 
     jd_payload = {
@@ -237,14 +221,12 @@ async def upload_resume_and_tailor(
 @app.get("/jobs/{job_id}/download-pdf")
 def download_job_pdf(
     job_id: int, 
-    asset_type: str = "resume",  # Added query parameter with a default
+    asset_type: str = "resume",
     db: Session = Depends(database.get_db),
     current_user: str = Depends(get_current_user)
 ):
-    # Enforce strict tenancy ownership validation
     db_job = get_user_job_or_raise(job_id, db, current_user)
         
-    # Pick content matching the specific asset requested
     text_content = db_job.tailored_resume if asset_type == "resume" else db_job.tailored_cover_letter
     if not text_content:
         raise HTTPException(status_code=404, detail=f"No tailored {asset_type} content found to download yet.")
@@ -264,7 +246,6 @@ def download_job_pdf(
             continue
             
         lower_line = stripped.lower()
-        # Filter out AI meta introductions and descriptions
         if (lower_line.startswith("here is") or 
             lower_line.startswith("here's") or 
             lower_line.startswith("note") or 
@@ -285,14 +266,12 @@ def download_job_pdf(
 @app.get("/jobs/{job_id}/download-docx")
 def download_job_docx(
     job_id: int, 
-    asset_type: str = "resume",  # Added query parameter with a default
+    asset_type: str = "resume",
     db: Session = Depends(database.get_db),
     current_user: str = Depends(get_current_user)
 ):
-    # Enforce strict tenancy ownership validation
     db_job = get_user_job_or_raise(job_id, db, current_user)
         
-    # Pick content matching the specific asset requested
     text_content = db_job.tailored_resume if asset_type == "resume" else db_job.tailored_cover_letter
     if not text_content:
         raise HTTPException(status_code=404, detail=f"No tailored {asset_type} content found to download yet.")
@@ -327,26 +306,20 @@ def download_job_docx(
 
 @app.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_job(job_id: int, db: Session = Depends(database.get_db), current_user: str = Depends(get_current_user)):
-    # 1. Fetch the targeted job tracking record from the SQLite database instance
     db_job = db.query(models.JobApplication).filter(models.JobApplication.id == job_id).first()
     
-    # 2. Raise 404 if the selected job application profile row doesn't exist
     if not db_job:
         raise HTTPException(
             status_code=404, 
             detail="The requested application profile target container could not be found to delete."
         )
     
-    # 3. Permanently remove the object entity entry from context memory streams
     db.delete(db_job)
     db.commit()
-    
-    # 244 No Content endpoints require empty return objects
     return None
-# 1. Update your existing /register endpoint inside backend/main.py to match this:
+
 @app.post("/register", response_model=schemas.UserResponse, status_code=201)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    # Check if username or phone already exists
     existing_user = db.query(models.User).filter(
         (models.User.username == user_in.username) | (models.User.phone == user_in.phone)
     ).first()
@@ -354,7 +327,6 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(database.ge
         raise HTTPException(status_code=400, detail="Username or Phone Number parameter is already registered.")
     
     hashed = hash_password(user_in.password)
-    # Provision user profile with the authenticated telephone string mapping
     new_user = models.User(
         username=user_in.username, 
         hashed_password=hashed,
@@ -365,14 +337,57 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(database.ge
     db.refresh(new_user)
     return new_user
 
-# 2. Add this brand-new password reset route right beneath it:
 @app.post("/auth/forgot-password", status_code=200)
 def forgot_password_reset(payload: schemas.PasswordResetRequest, db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.phone == payload.phone).first()
     if not user:
         raise HTTPException(status_code=404, detail="No registered workspace profile matches this phone identifier.")
     
-    # Securely re-hash and override database profile authentication row vector
     user.hashed_password = hash_password(payload.new_password)
     db.commit()
     return {"message": "Security credential credentials vector reset completed successfully."}
+
+
+# ─── SECURE ADMINISTRATIVE MANAGEMENT PANEL ROUTING ENDPOINTS ───
+
+@app.get("/admin/users")
+def get_all_users(db: Session = Depends(database.get_db), current_username: str = Depends(get_current_user)):
+    # 1. Fetch current user context
+    user = db.query(models.User).filter(models.User.username == current_username).first()
+    if not user or not getattr(user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Access denied. Administrative privileges required.")
+        
+    # 2. Return high-level security user profiles summary
+    users = db.query(models.User).all()
+    return [
+        {
+            "id": u.id, 
+            "username": u.username, 
+            "phone": u.phone, 
+            "is_admin": getattr(u, "is_admin", False)
+        } 
+        for u in users
+    ]
+
+@app.delete("/admin/users/{user_id}")
+def admin_delete_user(user_id: int, db: Session = Depends(database.get_db), current_username: str = Depends(get_current_user)):
+    # 1. Verify authorization context
+    user = db.query(models.User).filter(models.User.username == current_username).first()
+    if not user or not getattr(user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Access denied. Administrative privileges required.")
+        
+    # 2. Verify target existence
+    user_to_delete = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user_to_delete:
+        raise HTTPException(status_code=404, detail="Target user profile record missing from system index.")
+        
+    # 3. Prevent admin self-lockout/destruction hazards
+    if user_to_delete.id == user.id:
+        raise HTTPException(status_code=400, detail="Administrative profile self-deletion is blocked.")
+
+    # 4. Clean purge dependent job metadata rows to preserve database cascading integrity
+    db.query(models.JobApplication).filter(models.JobApplication.user_id == user_id).delete()
+
+    db.delete(user_to_delete)
+    db.commit()
+    return {"message": f"User account container {user_id} successfully purged from database cloud node clusters."}

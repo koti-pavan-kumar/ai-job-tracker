@@ -1,24 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import JobForm from './JobForm';
+import AdminPanel from './AdminPanel'; // Imported your new component
 import { useAuth } from './AuthContext';
 
 // ─── FIREBASE WEB INITIALIZATION STEP ───
-// Run 'npm install firebase' inside your frontend folder root terminal directory.
-// Fill in these fields directly from your Project Settings inside the Firebase Console console.
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-
-
-// Initialize Firebase
-// import { initializeApp } from "firebase/app";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB8MuAN-3bYhrKvx7QmrOhhMkYFpG73qIA",
@@ -49,6 +38,9 @@ export default function App() {
   const [assetMode, setAssetMode] = useState("resume");
   const [authMode, setAuthMode] = useState("login"); // "login", "register", "forgot"
   const [password, setPassword] = useState("");
+  
+  // Tab switcher state navigation hook
+  const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" or "admin"
 
   // New Phone Verification State Hooks
   const [phone, setPhone] = useState("");
@@ -87,7 +79,6 @@ export default function App() {
     if (token) { fetchJobs(); } 
   }, [token]);
 
-  // Handle Free SMS OTP Dispatch via Firebase Core Net Infrastructure
   const handleSendSMS = async () => {
     if (!phone.startsWith("+")) {
       alert("Please specify international mobile structural format (e.g., +919876543210)");
@@ -165,41 +156,40 @@ export default function App() {
   };
 
   const handleDownloadAsset = async (format) => {
-  const jobId = activeWorkspaceJob?.id;
-  if (!jobId || jobId === "undefined") return;
-  
-  // FIXED: Safeguard both "coverletter" and "cover_letter" string variations
-  const backendAssetType = (assetMode === "coverletter" || assetMode === "cover_letter") 
-    ? "cover_letter" 
-    : "resume";
-  
-  try {
-    const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}?asset_type=${backendAssetType}`;
-    const res = await fetch(endpoint, {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
+    const jobId = activeWorkspaceJob?.id;
+    if (!jobId || jobId === "undefined") return;
     
-    if (!res.ok) {
-      const errData = await res.json();
-      alert(errData.detail || "Failed to trigger compilation stream rendering.");
-      return;
-    }
+    const backendAssetType = (assetMode === "coverletter" || assetMode === "cover_letter") 
+      ? "cover_letter" 
+      : "resume";
+    
+    try {
+      const endpoint = `${API_BASE}/jobs/${jobId}/download-${format}?asset_type=${backendAssetType}`;
+      const res = await fetch(endpoint, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        alert(errData.detail || "Failed to trigger compilation stream rendering.");
+        return;
+      }
 
-    const blob = await res.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    
-    const displayType = (assetMode === "coverletter" || assetMode === "cover_letter") ? "CoverLetter" : "Resume";
-    link.setAttribute('download', `${activeWorkspaceJob.company_name || "Tailored"}_${displayType}.${format}`);
-    
-    document.body.appendChild(link);
-    link.click();
-    link.parentNode.removeChild(link);
-  } catch (err) {
-    alert("Error building document data downlinks.");
-  }
-};
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      const displayType = (assetMode === "coverletter" || assetMode === "cover_letter") ? "CoverLetter" : "Resume";
+      link.setAttribute('download', `${activeWorkspaceJob.company_name || "Tailored"}_${displayType}.${format}`);
+      
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      alert("Error building document data downlinks.");
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
@@ -208,6 +198,7 @@ export default function App() {
     setActiveWorkspaceJob(null);
     setWorkspaceOutput("");
     setSelectedFile(null);
+    setActiveTab("dashboard");
   };
 
   if (!token) {
@@ -238,14 +229,12 @@ export default function App() {
           alert("Network identity verification connection timed out.");
         }
       } else {
-        // Enforce Firebase Server Verification Check Phase
         if (!confirmationResult) {
           alert("Please request verification passcode via SMS stream component terminal first.");
           return;
         }
         
         try {
-          // Verify user code on Firebase infrastructure directly inside React at 0 cost
           await confirmationResult.confirm(verificationCode);
           
           if (authMode === "register") {
@@ -289,7 +278,6 @@ export default function App() {
 
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        {/* Invisible ReCaptcha Element Anchor required by Google Firebase SDK */}
         <div id="recaptcha-container"></div>
         
         <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 shadow-xl space-y-6">
@@ -355,7 +343,6 @@ export default function App() {
     );
   }
 
-  // Render original home active workspace dashboard application layouts matching perfectly below...
   return (
     <div className="min-h-screen bg-slate-50 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(199,210,254,0.35),rgba(255,255,255,0))] text-slate-800 font-sans antialiased selection:bg-indigo-500/10">
       <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur-xl px-8 py-4 sticky top-0 z-50 flex items-center justify-between shadow-sm">
@@ -368,6 +355,23 @@ export default function App() {
             <p className="text-[11px] text-slate-400 font-bold tracking-wide uppercase">AI Workspace Platform</p>
           </div>
         </div>
+        
+        {/* Sub-Navigation Component inside Workspace Header Layout */}
+        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200/60 shadow-inner">
+          <button 
+            onClick={() => setActiveTab("dashboard")} 
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${activeTab === "dashboard" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
+          >
+            Dashboard 📊
+          </button>
+          <button 
+            onClick={() => setActiveTab("admin")} 
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${activeTab === "admin" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
+          >
+            Admin Panel ⚙️
+          </button>
+        </div>
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-3.5 py-1 text-xs text-emerald-700 font-semibold">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Session Active
@@ -377,70 +381,78 @@ export default function App() {
       </header>
       
       <main className="max-w-7xl mx-auto p-8 space-y-12">
-        <JobForm onJobAdded={fetchJobs} />
-        <Dashboard 
-          jobs={jobs} 
-          onUpdateStatus={handleUpdateStatus} 
-          onSelectWorkspace={(job) => {
-            setActiveWorkspaceJob(job);
-            setWorkspaceOutput(job.tailored_resume || job.tailored_cover_letter || "Awaiting source profile document metrics to begin canvas rendering updates...");
-          }}
-          showToast={showToast} 
-          onDeleteJob={(deletedJobId) => {
-            setJobs(prevJobs => prevJobs.filter(item => item.id !== deletedJobId));
-            if (activeWorkspaceJob && activeWorkspaceJob.id === deletedJobId) {
-              setActiveWorkspaceJob(null);
-              setWorkspaceOutput("");
-              setSelectedFile(null);
-            }
-          }}
-        />
+        {activeTab === "admin" ? (
+          /* Secure Admin Panel Component Content Route View */
+          <AdminPanel token={token} API_BASE={API_BASE} />
+        ) : (
+          /* Standard Application View Canvas Context Row Streams */
+          <>
+            <JobForm onJobAdded={fetchJobs} />
+            <Dashboard 
+              jobs={jobs} 
+              onUpdateStatus={handleUpdateStatus} 
+              onSelectWorkspace={(job) => {
+                setActiveWorkspaceJob(job);
+                setWorkspaceOutput(job.tailored_resume || job.tailored_cover_letter || "Awaiting source profile document metrics to begin canvas rendering updates...");
+              }}
+              showToast={showToast} 
+              onDeleteJob={(deletedJobId) => {
+                setJobs(prevJobs => prevJobs.filter(item => item.id !== deletedJobId));
+                if (activeWorkspaceJob && activeWorkspaceJob.id === deletedJobId) {
+                  setActiveWorkspaceJob(null);
+                  setWorkspaceOutput("");
+                  setSelectedFile(null);
+                }
+              }}
+            />
 
-        {activeWorkspaceJob && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md space-y-6 animate-fadeIn">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-              <div>
-                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-0.5">Active Workspace Canvas</span>
-                <h3 className="text-lg font-bold text-slate-800 tracking-tight">
-                  Tailoring Assets for <span className="text-indigo-600">{activeWorkspaceJob.job_title}</span> at <span className="font-extrabold">{activeWorkspaceJob.company_name}</span>
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => handleDownloadAsset("pdf")} className="text-xs bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 shadow-sm">Download PDF 📄</button>
-                <button onClick={() => handleDownloadAsset("docx")} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 shadow-sm border border-slate-200">Download DOCX 📝</button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="space-y-4">
-                <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 space-y-4">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">1. Select Optimization Asset</label>
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200/50 rounded-lg">
-                    <button onClick={() => setAssetMode("resume")} className={`py-1.5 text-xs font-bold rounded-md transition ${assetMode === "resume" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500"}`}>Tailored Resume</button>
-                    <button onClick={() => setAssetMode("coverletter")} className={`py-1.5 text-xs font-bold rounded-md transition ${assetMode === "coverletter" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500"}`}>Cover Letter</button>
+            {activeWorkspaceJob && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md space-y-6 animate-fadeIn">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-0.5">Active Workspace Canvas</span>
+                    <h3 className="text-lg font-bold text-slate-800 tracking-tight">
+                      Tailoring Assets for <span className="text-indigo-600">{activeWorkspaceJob.job_title}</span> at <span className="font-extrabold">{activeWorkspaceJob.company_name}</span>
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => handleDownloadAsset("pdf")} className="text-xs bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 shadow-sm">Download PDF 📄</button>
+                    <button onClick={() => handleDownloadAsset("docx")} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 shadow-sm border border-slate-200">Download DOCX 📝</button>
                   </div>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 space-y-4">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">2. Upload Source Profile (.pdf/.txt)</label>
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-white hover:bg-slate-50/50 transition text-center px-4">
-                    <span className="text-2xl mb-1">📁</span>
-                    <p className="text-xs font-bold text-slate-600 line-clamp-1">{selectedFile ? selectedFile.name : "Click to source file"}</p>
-                    <input type="file" accept=".pdf,.txt" className="hidden" onChange={(e) => setSelectedFile(e.target.files[0])} />
-                  </label>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="space-y-4">
+                    <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 space-y-4">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">1. Select Optimization Asset</label>
+                      <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200/50 rounded-lg">
+                        <button onClick={() => setAssetMode("resume")} className={`py-1.5 text-xs font-bold rounded-md transition ${assetMode === "resume" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500"}`}>Tailored Resume</button>
+                        <button onClick={() => setAssetMode("coverletter")} className={`py-1.5 text-xs font-bold rounded-md transition ${assetMode === "coverletter" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500"}`}>Cover Letter</button>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 space-y-4">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">2. Upload Source Profile (.pdf/.txt)</label>
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-white hover:bg-slate-50/50 transition text-center px-4">
+                        <span className="text-2xl mb-1">📁</span>
+                        <p className="text-xs font-bold text-slate-600 line-clamp-1">{selectedFile ? selectedFile.name : "Click to source file"}</p>
+                        <input type="file" accept=".pdf,.txt" className="hidden" onChange={(e) => setSelectedFile(e.target.files[0])} />
+                      </label>
+                    </div>
+
+                    <button onClick={() => handleUploadAndTailor(assetMode)} disabled={generating} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 py-3 rounded-xl text-xs font-bold text-white uppercase tracking-wider shadow-md">
+                      {generating ? "AI Engine Generation Processing..." : `Generate Optimized ${assetMode === "resume" ? "Resume" : "Cover Letter"} ✨`}
+                    </button>
+                  </div>
+
+                  <div className="lg:col-span-2 flex flex-col">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Canvas Content Preview</label>
+                    <textarea value={workspaceOutput} onChange={(e) => setWorkspaceOutput(e.target.value)} className="w-full flex-1 min-h-[320px] bg-slate-900 text-slate-100 font-mono text-xs p-5 rounded-xl border border-slate-800 resize-none leading-relaxed" />
+                  </div>
                 </div>
-
-                <button onClick={() => handleUploadAndTailor(assetMode)} disabled={generating} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 py-3 rounded-xl text-xs font-bold text-white uppercase tracking-wider shadow-md">
-                  {generating ? "AI Engine Generation Processing..." : `Generate Optimized ${assetMode === "resume" ? "Resume" : "Cover Letter"} ✨`}
-                </button>
               </div>
-
-              <div className="lg:col-span-2 flex flex-col">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Canvas Content Preview</label>
-                <textarea value={workspaceOutput} onChange={(e) => setWorkspaceOutput(e.target.value)} className="w-full flex-1 min-h-[320px] bg-slate-900 text-slate-100 font-mono text-xs p-5 rounded-xl border border-slate-800 resize-none leading-relaxed" />
-              </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
       </main>
 
