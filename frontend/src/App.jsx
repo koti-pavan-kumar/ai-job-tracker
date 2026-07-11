@@ -1,31 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import JobForm from './JobForm';
-import AdminPanel from './AdminPanel'; // Imported your new component
+import AdminPanel from './AdminPanel'; 
 import { useAuth } from './AuthContext';
-
-// ─── FIREBASE WEB INITIALIZATION STEP ───
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-
-// Pure client-side check that will never crash the browser engine
-const resolvedApiKey = import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB8MuAN-3bYhrKvx7QmrOhhMkYFpG73qIA";
-
-const firebaseConfig = {
-  apiKey: resolvedApiKey,
-  authDomain: "ai-job-tracker.firebaseapp.com",
-  projectId: "ai-job-tracker",
-  storageBucket: "ai-job-tracker.appspot.com",
-  messagingSenderId: "360639912061",
-  appId: "1:360639912061:web:b6170d1887372c3d59e3ff"
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const firebaseApp = initializeApp(firebaseConfig);
-const firebaseAuth = getAuth(firebaseApp);
-// ────────────────────────────────────────
 
 const API_BASE = "https://ai-job-tracker-backend-8urc.onrender.com";
 
@@ -38,18 +15,11 @@ export default function App() {
   const [workspaceOutput, setWorkspaceOutput] = useState("");
   const [generating, setGenerating] = useState(false);
   const [assetMode, setAssetMode] = useState("resume");
-  const [authMode, setAuthMode] = useState("login"); // "login", "register", "forgot"
+  const [authMode, setAuthMode] = useState("login"); // "login" or "register"
   const [password, setPassword] = useState("");
   
   // Tab switcher state navigation hook
-  const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" or "admin"
-
-  // New Phone Verification State Hooks
-  const [phone, setPhone] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
-  const [newPassword, setNewPassword] = useState("");
+  const [activeTab, setActiveTab] = useState("dashboard"); 
 
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -80,30 +50,6 @@ export default function App() {
   useEffect(() => { 
     if (token) { fetchJobs(); } 
   }, [token]);
-
-  const handleSendSMS = async () => {
-    if (!phone.startsWith("+")) {
-      alert("Please specify international mobile structural format (e.g., +919876543210)");
-      return;
-    }
-
-    try {
-      let verifier = recaptchaVerifier;
-      if (!verifier) {
-        verifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
-          size: 'invisible',
-          callback: () => {}
-        });
-        setRecaptchaVerifier(verifier);
-      }
-
-      const confirmation = await signInWithPhoneNumber(firebaseAuth, phone, verifier);
-      setConfirmationResult(confirmation);
-      alert("Verification dynamic passcode sent successfully via text terminal profile!");
-    } catch (err) {
-      alert("Error issuing SMS verification request sequence: " + err.message);
-    }
-  };
 
   const handleUpdateStatus = async (id, nextStatus) => {
     if (!id || id === "undefined") return;
@@ -230,58 +176,29 @@ export default function App() {
         } catch {
           alert("Network identity verification connection timed out.");
         }
-      } else {
-        if (!confirmationResult) {
-          alert("Please request verification passcode via SMS stream component terminal first.");
-          return;
-        }
-        
+      } else if (authMode === "register") {
         try {
-          await confirmationResult.confirm(verificationCode);
-          
-          if (authMode === "register") {
-            const res = await fetch(`${API_BASE}/register`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ username, password, phone })
-            });
-            const data = await res.json();
-            if (res.ok) {
-              alert("Account provisioned successfully! You can now log in.");
-              setAuthMode("login"); 
-              setPassword("");
-              setPhone("");
-              setConfirmationResult(null);
-            } else {
-              alert(data.detail || "Registration processing block rejected.");
-            }
-          } else if (authMode === "forgot") {
-            const res = await fetch(`${API_BASE}/auth/forgot-password`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ phone, new_password: newPassword })
-            });
-            const data = await res.json();
-            if (res.ok) {
-              alert("Security credential updated successfully! Sign in using new parameters.");
-              setAuthMode("login");
-              setNewPassword("");
-              setPhone("");
-              setConfirmationResult(null);
-            } else {
-              alert(data.detail || "Credentials update sequence rejected.");
-            }
+          const res = await fetch(`${API_BASE}/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            alert("Account provisioned successfully! You can now log in.");
+            setAuthMode("login"); 
+            setPassword("");
+          } else {
+            alert(data.detail || "Registration processing block rejected.");
           }
         } catch (err) {
-          alert("Invalid OTP security token typed. Verification terminated.");
+          alert("Registration connection failed.");
         }
       }
     };
 
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div id="recaptcha-container"></div>
-        
         <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 shadow-xl space-y-6">
           <div className="text-center space-y-2">
             <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-md">
@@ -291,53 +208,24 @@ export default function App() {
             <p className="text-xs text-slate-500 font-medium capitalize">{authMode} Mode Workspace Control</p>
           </div>
 
-          <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-xl border border-slate-200/50">
-            <button type="button" onClick={() => { setAuthMode("login"); setConfirmationResult(null); }} className={`py-2 text-[11px] font-bold rounded-lg transition ${authMode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Sign In</button>
-            <button type="button" onClick={() => { setAuthMode("register"); setConfirmationResult(null); }} className={`py-2 text-[11px] font-bold rounded-lg transition ${authMode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Register</button>
-            <button type="button" onClick={() => { setAuthMode("forgot"); setConfirmationResult(null); }} className={`py-2 text-[11px] font-bold rounded-lg transition ${authMode === 'forgot' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Reset Access</button>
+          <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/50">
+            <button type="button" onClick={() => setAuthMode("login")} className={`py-2 text-[11px] font-bold rounded-lg transition ${authMode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Sign In</button>
+            <button type="button" onClick={() => setAuthMode("register")} className={`py-2 text-[11px] font-bold rounded-lg transition ${authMode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Register</button>
           </div>
 
           <form onSubmit={handleAuthSubmit} className="space-y-4">
-            {authMode !== "forgot" && (
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Username</label>
-                <input type="text" value={username} onChange={e => setUsername(e.target.value)} required={authMode !== "forgot"} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="username" />
-              </div>
-            )}
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Username</label>
+              <input type="text" value={username} onChange={e => setUsername(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="username" />
+            </div>
 
-            {authMode !== "login" && (
-              <div className="space-y-4 animate-fadeIn">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Phone Number</label>
-                  <div className="flex gap-2">
-                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} required={authMode !== "login"} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="+919876543210" />
-                    <button type="button" onClick={handleSendSMS} className="bg-indigo-600 text-white text-[11px] font-bold px-3.5 rounded-xl hover:bg-indigo-700 whitespace-nowrap">Get OTP</button>
-                  </div>
-                </div>
-
-                {confirmationResult && (
-                  <div>
-                    <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block mb-1">SMS Verification Code</label>
-                    <input type="text" value={verificationCode} onChange={e => setVerificationCode(e.target.value)} required className="w-full bg-emerald-50/30 border border-emerald-200 rounded-xl px-4 py-2 text-sm text-center font-bold tracking-widest" placeholder="6-Digit Code" />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {authMode !== "forgot" ? (
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Password</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required={authMode !== "forgot"} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="••••••••" />
-              </div>
-            ) : (
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">New Secure Password</label>
-                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="••••••••" />
-              </div>
-            )}
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Password</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="••••••••" />
+            </div>
 
             <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl text-xs font-bold transition shadow-md text-white uppercase tracking-wider">
-              {authMode === "login" ? "Authorize Workspace" : authMode === "register" ? "Confirm Registration" : "Apply Password Update"}
+              {authMode === "login" ? "Authorize Workspace" : "Confirm Registration"}
             </button>
           </form>
         </div>
@@ -358,20 +246,9 @@ export default function App() {
           </div>
         </div>
         
-        {/* Sub-Navigation Component inside Workspace Header Layout */}
         <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200/60 shadow-inner">
-          <button 
-            onClick={() => setActiveTab("dashboard")} 
-            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${activeTab === "dashboard" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
-          >
-            Dashboard 📊
-          </button>
-          <button 
-            onClick={() => setActiveTab("admin")} 
-            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${activeTab === "admin" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
-          >
-            Admin Panel ⚙️
-          </button>
+          <button onClick={() => setActiveTab("dashboard")} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${activeTab === "dashboard" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}>Dashboard 📊</button>
+          <button onClick={() => setActiveTab("admin")} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${activeTab === "admin" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}>Admin Panel ⚙️</button>
         </div>
 
         <div className="flex items-center gap-4">
@@ -384,10 +261,8 @@ export default function App() {
       
       <main className="max-w-7xl mx-auto p-8 space-y-12">
         {activeTab === "admin" ? (
-          /* Secure Admin Panel Component Content Route View */
           <AdminPanel token={token} API_BASE={API_BASE} />
         ) : (
-          /* Standard Application View Canvas Context Row Streams */
           <>
             <JobForm onJobAdded={fetchJobs} />
             <Dashboard 

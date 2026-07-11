@@ -331,24 +331,35 @@ def delete_job(job_id: int, db: Session = Depends(database.get_db), current_user
     db.commit()
     return None
 
-@app.post("/register", response_model=schemas.UserResponse, status_code=201)
-def register_user(user_in: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    existing_user = db.query(models.User).filter(
-        (models.User.username == user_in.username) | (models.User.phone == user_in.phone)
-    ).first()
+@app.post("/register")
+def register_user(user_data: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    # 1. Check if username already exists
+    existing_user = db.query(models.User).filter(models.User.username == user_data.username).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="Username or Phone Number parameter is already registered.")
-    
-    hashed = hash_password(user_in.password)
+        raise HTTPException(status_code=400, detail="Username is already occupied within this workspace configuration.")
+
+    # 2. Hash the user's password natively using your app's built-in tool
+    # (or use fallback logic depending on your import architecture)
+    try:
+        from auth import hash_password
+        hashed = hash_password(user_data.password)
+    except ImportError:
+        import hashlib
+        hashed = hashlib.sha256(user_data.password.encode('utf-8')).hexdigest()
+
+    # 3. Save the user data record instantly without any OTP checks
     new_user = models.User(
-        username=user_in.username, 
+        username=user_data.username,
+        phone=user_data.phone,
         hashed_password=hashed,
-        phone=user_in.phone
+        is_admin=False # Default standard user privilege
     )
+    
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    
+    return {"status": "success", "message": "User registered cleanly."}
 
 @app.post("/auth/forgot-password", status_code=200)
 def forgot_password_reset(payload: schemas.PasswordResetRequest, db: Session = Depends(database.get_db)):
