@@ -343,18 +343,36 @@ def delete_job(job_id: int, db: Session = Depends(database.get_db), current_user
     
     # 244 No Content endpoints require empty return objects
     return None
+# 1. Update your existing /register endpoint inside backend/main.py to match this:
 @app.post("/register", response_model=schemas.UserResponse, status_code=201)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    # Check if user already exists
-    existing_user = db.query(models.User).filter(models.User.username == user_in.username).first()
+    # Check if username or phone already exists
+    existing_user = db.query(models.User).filter(
+        (models.User.username == user_in.username) | (models.User.phone == user_in.phone)
+    ).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="Username is already registered in this workspace.")
+        raise HTTPException(status_code=400, detail="Username or Phone Number parameter is already registered.")
     
-    # Hash password natively using bcrypt and save to database
     hashed = hash_password(user_in.password)
-    new_user = models.User(username=user_in.username, hashed_password=hashed)
-    
+    # Provision user profile with the authenticated telephone string mapping
+    new_user = models.User(
+        username=user_in.username, 
+        hashed_password=hashed,
+        phone=user_in.phone
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
+
+# 2. Add this brand-new password reset route right beneath it:
+@app.post("/auth/forgot-password", status_code=200)
+def forgot_password_reset(payload: schemas.PasswordResetRequest, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.phone == payload.phone).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="No registered workspace profile matches this phone identifier.")
+    
+    # Securely re-hash and override database profile authentication row vector
+    user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"message": "Security credential credentials vector reset completed successfully."}

@@ -44,6 +44,11 @@ class JobResponse(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
+    phone: str
+
+class PasswordResetRequest(BaseModel):
+    phone: str
+    new_password: str
 
 class UserResponse(BaseModel):
     id: int
