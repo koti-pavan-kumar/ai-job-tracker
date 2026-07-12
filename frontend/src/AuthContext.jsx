@@ -2,13 +2,12 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const API_BASE = "https://ai-job-tracker-backend-8urc.onrender.com"; // Centralized Source of Truth
+export const API_BASE = "https://ai-job-tracker-backend-8urc.onrender.com"; 
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem("authToken") || "");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(localStorage.getItem("authUsername") || "");
 
-  // Sync token changes automatically with local storage context
   useEffect(() => {
     if (token) {
       localStorage.setItem("authToken", token);
@@ -17,9 +16,19 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
+  useEffect(() => {
+    if (username) {
+      localStorage.setItem("authUsername", username);
+    } else {
+      localStorage.removeItem("authUsername");
+    }
+  }, [username]);
+
   const logout = () => {
     setToken("");
     setUsername("");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUsername");
   };
 
   return (
@@ -29,7 +38,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Custom hook so components can pull auth variables cleanly
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

@@ -180,9 +180,10 @@ export default function App() {
 
           const data = await res.json();
           if (res.ok && data.access_token) {
-            localStorage.setItem("authToken", data.access_token);
             setToken(data.access_token);
-            setUsername("");
+  // Keep the active logging username inside your context provider state 
+  // instead of blanking it out immediately
+            setUsername(username); 
             setPassword("");
           } else { 
             alert(data.detail || "Authentication entry sequence failed.");
