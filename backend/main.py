@@ -57,6 +57,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ─── NEW CLEAN REGISTER ENDPOINT ───
+@app.post("/register")
+def register_user(user_data: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    # 1. Look for conflicting usernames
+    existing_user = db.query(models.User).filter(models.User.username == user_data.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username is already occupied within this workspace configuration.")
+
+    # 2. Securely hash password text parameters
+    hashed = hash_password(user_data.password)
+
+    # 3. Create user entry - assign fallback string for phone if empty to prevent database constraints
+    fallback_phone = user_data.phone if getattr(user_data, "phone", None) else f"no_phone_{user_data.username}"
+
+    new_user = models.User(
+        username=user_data.username,
+        phone=fallback_phone,
+        hashed_password=hashed,
+        is_admin=False
+    )
+    
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database operational failure: {str(e)}")
+    
+    return {"status": "success", "message": "User registered cleanly."}
+
+
 @app.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     # 1. Look up the user dynamically inside your database instance
@@ -331,40 +363,6 @@ def delete_job(job_id: int, db: Session = Depends(database.get_db), current_user
     db.commit()
     return None
 
-from fastapi.security import OAuth2PasswordRequestForm
-
-@app.post("/token")
-def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), 
-    db: Session = Depends(database.get_db)
-):
-    # 1. Clear lookup directly using username form parameter
-    user = db.query(models.User).filter(models.User.username == form_data.username).first()
-    
-    if not user:
-        raise HTTPException(status_code=400, detail="Incorrect username or workspace configuration parameters.")
-
-    # 2. Match password natively using your hashing utilities
-    try:
-        from auth import verify_password
-        is_valid = verify_password(form_data.password, user.hashed_password)
-    except ImportError:
-        import hashlib
-        hashed_input = hashlib.sha256(form_data.password.encode('utf-8')).hexdigest()
-        is_valid = (hashed_input == user.hashed_password)
-
-    if not is_valid:
-        raise HTTPException(status_code=400, detail="Incorrect credential validation parameters.")
-
-    # 3. Create token smoothly without referencing phone contexts
-    try:
-        from auth import create_access_token
-        access_token = create_access_token(data={"sub": user.username})
-    except ImportError:
-        # Fallback placeholder string if helper utilities differ
-        access_token = f"mock_token_for_{user.username}"
-
-    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/auth/forgot-password", status_code=200)
 def forgot_password_reset(payload: schemas.PasswordResetRequest, db: Session = Depends(database.get_db)):
@@ -420,7 +418,8 @@ def admin_delete_user(user_id: int, db: Session = Depends(database.get_db), curr
     db.delete(user_to_delete)
     db.commit()
     return {"message": f"User account container {user_id} successfully purged from database cloud node clusters."}
-    # ─── AUTO-INITIALIZE ADMINISTRATIVE USER OVERRIDES ───
+
+# ─── AUTO-INITIALIZE ADMINISTRATIVE USER OVERRIDES ───
 @app.on_event("startup")
 def create_default_admin():
     import database, models, os
