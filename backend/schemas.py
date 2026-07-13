@@ -44,7 +44,9 @@ class JobResponse(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
-    phone: str
+    name: Optional[str] = ""
+    email: Optional[str] = ""
+    phone: Optional[str] = ""
 
 class PasswordResetRequest(BaseModel):
     phone: str

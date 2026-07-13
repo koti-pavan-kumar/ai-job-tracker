@@ -21,6 +21,8 @@ export default function App() {
   const [assetMode, setAssetMode] = useState("resume");
   const [authMode, setAuthMode] = useState("login"); // "login" or "register"
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard"); 
 
   const showToast = (message, type = 'success') => {
@@ -200,6 +202,8 @@ export default function App() {
             body: JSON.stringify({ 
               username: username, 
               password: password,
+              name: name,
+              email: email,
               phone: ""
             })
           });
@@ -250,6 +254,20 @@ export default function App() {
           </div>
 
           <form onSubmit={handleAuthSubmit} className="space-y-4">
+            {authMode === "register" && (
+              <>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Full Name</label>
+                  <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="John Doe" />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Email Address</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="john@example.com" />
+                </div>
+              </>
+            )}
+
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Username</label>
               <input type="text" value={username} onChange={e => setUsername(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:bg-white focus:outline-none" placeholder="username" />
