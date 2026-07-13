@@ -59,6 +59,7 @@ app.add_middleware(
 )
 
 # ─── NEW CLEAN REGISTER ENDPOINT ───
+# ─── FIXED BULLETPROOF REGISTER ENDPOINT ───
 @app.post("/register")
 def register_user(user_data: schemas.UserCreate, db: Session = Depends(database.get_db)):
     # 1. Look for conflicting usernames
@@ -69,11 +70,16 @@ def register_user(user_data: schemas.UserCreate, db: Session = Depends(database.
     # 2. Securely hash password text parameters
     hashed = hash_password(user_data.password)
 
-    # 3. Create user entry - assign fallback string for phone if empty to prevent database constraints
-    fallback_phone = user_data.phone if getattr(user_data, "phone", None) else f"no_phone_{user_data.username}"
+    # 3. Extract attributes cleanly with fallbacks to avoid schema validation errors
+    user_name = getattr(user_data, "name", "") if getattr(user_data, "name", "") else ""
+    user_email = getattr(user_data, "email", "") if getattr(user_data, "email", "") else ""
+    fallback_phone = getattr(user_data, "phone", "") if getattr(user_data, "phone", "") else f"no_phone_{user_data.username}"
 
+    # 4. Instantiate model ensuring every column maps smoothly
     new_user = models.User(
         username=user_data.username,
+        name=user_name,
+        email=user_email,
         phone=fallback_phone,
         hashed_password=hashed,
         is_admin=False
@@ -426,24 +432,24 @@ def create_default_admin():
     
     try:
         admin_user = os.getenv("ADMIN_USERNAME", "whitedevil")
-        
         db = database.SessionLocal()
         
-        # 1. Clean out the old baseline entry
+        # 1. Clean out the old baseline entry to avoid column conflicts
         existing = db.query(models.User).filter(models.User.username == admin_user).first()
         if existing:
             print(f"Purging old state row for: {admin_user}")
             db.delete(existing)
             db.commit()
 
-        # 2. Inject a pre-compiled true bcrypt hash for 'password123'
-        # This matches the exact format your backend uses when validating logins!
+        # 2. Pre-compiled true bcrypt hash for 'password123'
         true_bcrypt_hash = "$2b$12$D67b5eHk9m6Xf8Uv6gYgIeuW6PZ7L.h7vM7A2p6q9kE1vS6Cq6Gqy"
             
-        # 3. Create the administrative profile record
+        # 3. Create the administrative profile record with all updated attributes
         print(f"Injecting pre-hashed authentic admin account: {admin_user}")
         new_admin = models.User(
             username=admin_user,
+            name="Workspace Master Admin",
+            email="admin@talentflow.studio",
             hashed_password=true_bcrypt_hash,
             phone="+919999999999",
             is_admin=True
