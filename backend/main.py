@@ -379,18 +379,17 @@ def forgot_password_reset(payload: schemas.PasswordResetRequest, db: Session = D
 
 @app.get("/admin/users")
 def get_all_users(db: Session = Depends(database.get_db), current_username: str = Depends(get_current_user)):
-    # 1. Fetch current user context
     user = db.query(models.User).filter(models.User.username == current_username).first()
     if not user or not getattr(user, "is_admin", False):
         raise HTTPException(status_code=403, detail="Access denied. Administrative privileges required.")
         
-    # 2. Return high-level security user profiles summary
     users = db.query(models.User).all()
     return [
         {
             "id": u.id, 
             "username": u.username, 
-            "phone": u.phone, 
+            "name": getattr(u, "name", ""),   # Sent down cleanly
+            "email": getattr(u, "email", ""), # Sent down cleanly
             "is_admin": getattr(u, "is_admin", False)
         } 
         for u in users

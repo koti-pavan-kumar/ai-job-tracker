@@ -68,45 +68,41 @@ export default function AdminPanel({ token, API_BASE }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 text-gray-600 uppercase text-sm border-b">
-              <th className="p-3">ID</th>
-              <th className="p-3">Username</th>
-              <th className="p-3">Phone Number</th>
-              <th className="p-3">Role</th>
-              <th className="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y text-gray-700">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="p-3 font-mono text-sm text-gray-500">{user.id}</td>
-                <td className="p-3 font-semibold">{user.username}</td>
-                <td className="p-3 text-gray-600">{user.phone || "N/A"}</td>
-                <td className="p-3">
-                  <span className={`px-2 py-1 text-xs font-bold rounded-full ${user.is_admin ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
-                    {user.is_admin ? "Administrator" : "Standard User"}
-                  </span>
-                </td>
-                <td className="p-3 text-right">
-                  <button
-                    onClick={() => handleDeleteUser(user.id, user.username)}
-                    disabled={user.is_admin}
-                    className={`px-3 py-1.5 rounded text-sm font-medium transition ${
-                      user.is_admin 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'bg-red-50 hover:bg-red-100 text-red-600'
-                    }`}
-                  >
-                    Delete Account
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  <table className="w-full text-left border-collapse">
+    <thead>
+      <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <th className="py-3 px-4">User Details</th>
+        <th className="py-3 px-4">Username</th>
+        <th className="py-3 px-4">Email Address</th>
+        <th className="py-3 px-4">Role Status</th>
+        <th className="py-3 px-4 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-slate-100 text-sm">
+      {users.map((user) => (
+        <tr key={user.id} className="hover:bg-slate-50/80 transition">
+          <td className="py-3 px-4 font-semibold text-slate-800">{user.name || "N/A"}</td>
+          <td className="py-3 px-4 text-slate-600">@{user.username}</td>
+          <td className="py-3 px-4 text-slate-500 font-mono text-xs">{user.email || "No Email Provided"}</td>
+          <td className="py-3 px-4">
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${user.is_admin ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-slate-100 text-slate-600"}`}>
+              {user.is_admin ? "Workspace Master" : "Standard Operator"}
+            </span>
+          </td>
+          <td className="py-3 px-4 text-right">
+            <button 
+              onClick={() => handleDeleteUser(user.id)} 
+              disabled={user.is_admin}
+              className="text-xs font-bold text-rose-500 hover:text-rose-700 disabled:opacity-30 disabled:pointer-events-none transition"
+            >
+              Purge User 🗑️
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
     </div>
   );
 }

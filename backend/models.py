@@ -8,8 +8,10 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    phone = Column(String, unique=True, index=True, nullable=False)  # Added phone number column tracking
-    is_admin = Column(Boolean, default=False, nullable=False)
+    name = Column(String, default="")   # Added column
+    email = Column(String, default="")  # Added column
+    phone = Column(String, default="")
+    is_admin = Column(Boolean, default=False)
 
 class JobApplication(Base):
     __tablename__ = "jobs"
