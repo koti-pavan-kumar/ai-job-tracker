@@ -288,22 +288,27 @@ def create_default_admin():
     try:
         admin_user = os.getenv("ADMIN_USERNAME", "whitedevil")
         db = database.SessionLocal()
+        
+        # Check if admin already exists
         existing = db.query(models.User).filter(models.User.username == admin_user).first()
+        
         if existing:
-            db.delete(existing)
+            # DO NOT DELETE. Just leave it alone so data is permanent!
+            print(f"✅ Admin user '{admin_user}' already exists. Skipping recreation.")
+        else:
+            print(f"✨ Creating fresh admin account: {admin_user}")
+            true_bcrypt_hash = "$2b$12$D67b5eHk9m6Xf8Uv6gYgIeuW6PZ7L.h7vM7A2p6q9kE1vS6Cq6Gqy"
+            new_admin = models.User(
+                username=admin_user,
+                name="Workspace Master Admin",
+                email="admin@talentflow.studio",
+                hashed_password=true_bcrypt_hash,
+                phone="+919999999999",
+                is_admin=True
+            )
+            db.add(new_admin)
             db.commit()
-
-        true_bcrypt_hash = "$2b$12$D67b5eHk9m6Xf8Uv6gYgIeuW6PZ7L.h7vM7A2p6q9kE1vS6Cq6Gqy"
-        new_admin = models.User(
-            username=admin_user,
-            name="Workspace Master Admin",
-            email="admin@talentflow.studio",
-            hashed_password=true_bcrypt_hash,
-            phone="+919999999999",
-            is_admin=True
-        )
-        db.add(new_admin)
-        db.commit()
+            
         db.close()
     except Exception as e:
-        print(f"Admin warning: {e}")
+        print(f"Admin startup warning: {e}")
