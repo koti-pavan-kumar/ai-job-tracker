@@ -48,7 +48,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173", 
-        "https://ai-job-tracker-lljg.onrender.com"  # Your frontend URL
+        "https://ai-job-tracker-frontend-2fj1.onrender.com"  # Updated to your live frontend url
     ],
     allow_credentials=True,
     allow_methods=["*"],
