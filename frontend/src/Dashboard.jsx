@@ -122,7 +122,7 @@ export default function Dashboard({ jobs = [], onUpdateStatus, onSelectWorkspace
                         onClick={() => onSelectWorkspace && onSelectWorkspace(job)}
                         className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold px-2.5 py-1 rounded-md transition shadow-2xs"
                       >
-                        Workspace 🛠️
+                        Create Resume 🛠️
                       </button>
                       <button 
                         onClick={() => handleDeleteClick(job)}

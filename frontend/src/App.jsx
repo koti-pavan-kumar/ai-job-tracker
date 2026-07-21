@@ -279,7 +279,7 @@ export default function App() {
             </div>
 
             <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl text-xs font-bold transition shadow-md text-white uppercase tracking-wider">
-              {authMode === "login" ? "Authorize Workspace" : "Confirm Registration"}
+              {authMode === "login" ? "Login" : "Confirm Registration"}
             </button>
           </form>
         </div>

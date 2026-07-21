@@ -59,7 +59,7 @@ export default function JobForm({ onJobAdded }) {
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-      <h3 className="text-base font-bold text-slate-800 uppercase tracking-wide">Ingest Application Platform Target</h3>
+      <h3 className="text-base font-bold text-slate-800 uppercase tracking-wide">Enter Target Platform Link</h3>
       <div className="flex flex-col sm:flex-row gap-3">
         <input 
           type="text" 
@@ -113,7 +113,7 @@ export default function JobForm({ onJobAdded }) {
               Cancel Entry
             </button>
             <button onClick={handleSave} className="text-xs px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition shadow-sm">
-              Commit Pipeline Record
+              Add Entry
             </button>
           </div>
         </div>
