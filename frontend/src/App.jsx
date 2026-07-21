@@ -6,9 +6,9 @@ import { useAuth } from './AuthContext';
 
 // Dynamically auto-detect your Render backend environment based on where your browser is hosted
 const currentHost = window.location.hostname;
-const API_BASE = currentHost.includes("onrender.com")
-  ? `https://${currentHost.replace("ai-job-tracker-lljg", "ai-job-tracker-backend-8urc")}` 
-  : "https://ai-job-tracker-backend-8urc.onrender.com";
+const API_BASE = "https://ai-job-tracker-byeq.onrender.com";
+  // ? `https://${currentHost.replace("ai-job-tracker-lljg", "ai-job-tracker-backend-8urc")}` 
+  // : "https://ai-job-tracker-backend-8urc.onrender.com";
 
 export default function App() {
   const { token, setToken, username, setUsername, logout } = useAuth();
